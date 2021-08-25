@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/search_nav_graph"
+    app:startDestination="@id/nearbyVenuesMapFragment">
+
+    <fragment
+        android:id="@+id/nearbyVenuesMapFragment"
+        android:name="com.djustix.nearbites.features.search.view.NearbyVenuesMapFragment"
+        android:label="NearbyVenuesMapFragment"
+        tools:layout="@layout/fragment_nearby_venues_map" >
+        <action
+            android:id="@+id/showVenueDetail"
+            app:destination="@id/venueDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/venueDetailFragment"
+        android:name="com.djustix.nearbites.features.search.view.VenueDetailFragment"
+        android:label="VenueDetailFragment"
+        tools:layout="@layout/fragment_venue_detail">
+        <argument
+            android:name="venue"
+            app:argType="com.djustix.nearbites.features.search.domain.models.Venue" />
+    </fragment>
+</navigation>
