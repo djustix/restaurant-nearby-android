@@ -6,7 +6,7 @@ import com.djustix.nearbites.features.search.domain.models.Venue
 import com.djustix.nearbites.features.search.domain.repository.VenueRepository
 
 class FourSquareVenueRepository(private val api: FourSquareVenueApi) : VenueRepository {
-    override suspend fun getBars(request: VenueRepository.SearchRequest): List<Venue> {
+    override suspend fun searchVenues(request: VenueRepository.SearchRequest): List<Venue> {
         val result = api.getVenues(
             location = "${request.latitude},${request.longitude}",
             radius = request.radiusInMeters,

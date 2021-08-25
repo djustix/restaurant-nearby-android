@@ -3,7 +3,7 @@ package com.djustix.nearbites.features.search.domain.repository
 import com.djustix.nearbites.features.search.domain.models.Venue
 
 interface VenueRepository {
-    suspend fun getBars(request: SearchRequest) : List<Venue>
+    suspend fun searchVenues(request: SearchRequest) : List<Venue>
 
     data class SearchRequest(
         val latitude: Double,

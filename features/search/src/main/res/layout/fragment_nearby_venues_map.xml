@@ -10,4 +10,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <com.djustix.nearbites.common.view.LoadingView
+        android:id="@+id/loading_view"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/common.views.loader.default_height"
+        android:layout_margin="@dimen/common.views.loader.default_margin"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

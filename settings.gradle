@@ -1,3 +1,4 @@
 rootProject.name = "Nearbites"
 include ':app'
 include ':features:search'
+include ':common'

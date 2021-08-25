@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nearby.searching_location">Searching for your location</string>
+    <string name="nearby.searching_venues">Searching for venues near you</string>
+</resources>
