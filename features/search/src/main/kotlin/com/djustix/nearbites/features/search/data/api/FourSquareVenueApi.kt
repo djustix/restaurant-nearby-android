@@ -16,7 +16,7 @@ import retrofit2.http.Query
 
 private const val API_VERSION = "20210801"
 private const val DEFAULT_RADIUS = 250
-private const val DEFAULT_LIMIT = 10
+private const val DEFAULT_LIMIT = 50
 private const val DEFAULT_CATEGORIES = ""
 interface FourSquareVenueApi {
     @GET("venues/search")

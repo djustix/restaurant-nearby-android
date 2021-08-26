@@ -2,7 +2,9 @@ package com.djustix.nearbites.features.search.view
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.location.Location
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.djustix.nearbites.common.location.LocationPermissionProvider
 import com.djustix.nearbites.common.location.LocationProvider
 import com.djustix.nearbites.features.search.R
@@ -23,6 +26,8 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
+private const val DEFAULT_ZOOM_LEVEL = 15f
+
 class NearbyVenuesMapFragment : Fragment(),
     OnMapReadyCallback,
     LocationPermissionProvider {
@@ -32,24 +37,25 @@ class NearbyVenuesMapFragment : Fragment(),
     private val viewModel: NearbyVenuesViewModel by viewModel()
 
     // Google Maps & Location Services
-    private var mapView: GoogleMap? = null
-    private val markers = mutableMapOf<String, Marker>()
+    private lateinit var mapView: GoogleMap
+    private val markers = mutableMapOf<String, Pair<Venue, Marker>>()
 
-    private val isMapViewReady get() = mapView != null
+    private var isMapContentRequired: Boolean = false
 
     private val locationProvider by lazy { LocationProvider(requireContext()) }
 
-    override val locationPermissionLauncher: ActivityResultLauncher<String> = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ){ isGranted ->
-        if (isGranted) {
-            locationProvider.startLocationUpdates()
+    override val locationPermissionLauncher: ActivityResultLauncher<String> =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                locationProvider.startLocationUpdates()
+            }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel.venues.observe(this) { viewState ->
+        viewModel.state.observe(this) { viewState ->
             if (viewState is NearbyVenuesViewModel.ViewState.VenuesAvailable) {
                 displayVenues(viewState.data)
             }
@@ -63,16 +69,10 @@ class NearbyVenuesMapFragment : Fragment(),
     ): View {
         _binding = FragmentNearbyVenuesMapBinding.inflate(inflater, container, false)
 
-        /*binding.button.setOnClickListener {
-            val venue = Venue(id = "","The Hilton", Venue.Location(54.0, 45.0))
-            val action = NearbyVenuesMapFragmentDirections.showVenueDetail(venue)
-
-            findNavController().navigate(action)
-        }*/
-
         binding.loadingView.show()
 
-        val mapFragment = childFragmentManager.findFragmentById(R.id.mapFragment) as? SupportMapFragment
+        val mapFragment =
+            childFragmentManager.findFragmentById(R.id.mapFragment) as? SupportMapFragment
         mapFragment?.getMapAsync(this)
 
         return binding.root
@@ -85,76 +85,126 @@ class NearbyVenuesMapFragment : Fragment(),
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
-        mapView = googleMap
-
         binding.loadingView.text = getString(R.string.nearby_searching_location)
         binding.loadingView.show()
+
+        mapView = googleMap.apply {
+            setOnCameraMoveStartedListener { reason ->
+                if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+                    isMapContentRequired = true
+                    binding.highlightView.hide()
+                }
+            }
+            setOnCameraIdleListener {
+                if (isMapContentRequired) {
+                    onNearbyVenuesRequested()
+                }
+            }
+
+            setOnMarkerClickListener { marker ->
+                val pair = markers[marker.tag]
+                if (pair != null) {
+                    binding.highlightView.show(pair.first)
+                    binding.highlightView.setOnClickListener {
+                        val action = NearbyVenuesMapFragmentDirections.showVenueDetail(pair.first)
+
+                        findNavController().navigate(action)
+                    }
+                }
+                true
+            }
+        }
 
         locationProvider
             .startLocationUpdates(this)
             .observe(this) { data ->
                 if (data is LocationProvider.LocationData.Available) {
-                    binding.loadingView.text = getString(R.string.nearby_searching_venues)
-                    viewModel.searchVenues(
-                        latitude = data.location.latitude,
-                        longitude = data.location.longitude
+                    val update = CameraUpdateFactory.newLatLngZoom(
+                        LatLng(data.location.latitude, data.location.longitude),
+                        DEFAULT_ZOOM_LEVEL
                     )
+                    mapView.moveCamera(update)
+                    isMapContentRequired = true
                 }
             }
-        
+
+    }
+
+    private fun onNearbyVenuesRequested() {
+        isMapContentRequired = false
+
+        binding.loadingView.text = getString(R.string.nearby_searching_venues)
+        binding.loadingView.show()
+
+        val target = mapView.cameraPosition.target
+
+        viewModel.searchVenues(
+            latitude = target.latitude,
+            longitude = target.longitude,
+            radiusInMeters = mapView.getRadiusForVisibleRegion()
+        )
     }
 
     private fun displayVenues(venues: List<Venue>) {
+        Log.i("BiteMe", "Display ${venues.size} venues")
         binding.loadingView.hide()
 
-        clearMarkers()
-
-        venues.forEach {
-            addVenueMarker(it)
+        // Only attempt to add markers if the venue isn't already added
+        val newMarkers = mutableMapOf<String, Pair<Venue, Marker>>()
+        venues.forEach { venue ->
+            if (!markers.containsKey(venue.id)) {
+                val marker = mapView.addVenueMarker(venue)
+                marker?.also {
+                    it.tag = venue.id
+                    markers[venue.id] = Pair(venue, marker)
+                }
+            }
         }
 
-        zoomToFitMarkers()
+        mapView.removeOutOfBoundsMarkers()
     }
 
-    private fun clearMarkers() {
-        for (marker in markers.values) {
-            marker.remove()
+    /**
+     * Remove any markers that are out of bounds of the ViewPort
+     */
+    private fun GoogleMap.removeOutOfBoundsMarkers() {
+        val mapBounds = projection.visibleRegion.latLngBounds
+        val iterator = markers.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (!mapBounds.contains(entry.value.second.position)) {
+                entry.value.second.remove()
+                iterator.remove()
+            }
         }
-
-        markers.clear()
     }
 
-    private fun addVenueMarker(venue: Venue) = mapView?.apply {
+    private fun GoogleMap.addVenueMarker(venue: Venue): Marker? {
         val location = LatLng(venue.location.latitude, venue.location.longitude)
+
         //val icon = bitmapDescriptorFromVector(R.drawable.ic_marker)
         val options = MarkerOptions()
             //.icon(icon)
             .anchor(0.5f, 0.9f)
             .position(location)
 
-        val addedMarker = addMarker(options)
-        if (addedMarker != null) {
-            markers[venue.id] = addedMarker
-        }
+        return addMarker(options)
     }
 
-    private fun zoomToFitMarkers() = mapView?.apply {
-        if (markers.isNotEmpty()) {
+    private fun GoogleMap.getRadiusForVisibleRegion(): Int {
+        val center = cameraPosition.target
+        val bottomLeft = projection.visibleRegion.nearLeft
+        val radius = FloatArray(1)
 
-            val boundsBuilder = LatLngBounds.Builder()
-            for (marker in markers.values) {
-                boundsBuilder.include(marker.position)
-            }
+        Location.distanceBetween(
+            center.latitude,
+            center.longitude,
+            bottomLeft.latitude,
+            bottomLeft.longitude,
+            radius
+        )
 
-            val bounds = boundsBuilder.build()
-
-            val targetWidth = (binding.root.width * .8).toInt()
-            val targetHeight = (binding.root.height * .8).toInt()
-
-            val update = CameraUpdateFactory.newLatLngBounds(bounds, targetWidth, targetHeight, 0)
-
-            animateCamera(update)
-        }
+        return radius[0].toInt()
     }
 
     private fun bitmapDescriptorFromVector(@DrawableRes vectorResId: Int): BitmapDescriptor? {

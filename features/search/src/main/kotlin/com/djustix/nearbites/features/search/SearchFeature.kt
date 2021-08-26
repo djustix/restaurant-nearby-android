@@ -24,7 +24,7 @@ val searchModule = module {
         }
 
         val httpClient = OkHttpClient.Builder().apply {
-            addInterceptor(logging)
+            //addInterceptor(logging)
         }
 
         val retrofit = Retrofit.Builder()

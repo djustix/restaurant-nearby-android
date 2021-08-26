@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <dimen name="common.padding">16dp</dimen>
     <dimen name="common.margin">16dp</dimen>
 
     <dimen name="common.views.loader.default_margin">8dp</dimen>
