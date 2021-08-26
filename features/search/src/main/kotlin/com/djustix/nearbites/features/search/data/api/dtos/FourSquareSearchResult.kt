@@ -9,23 +9,13 @@ data class FourSquareSearchResult(
         data class BarObject(
             val id: String,
             val name: String,
-            val location: Location,
-            val contact: Contact,
-            val venueDetails: VenueDetails
+            val location: Location
         ) {
             data class Location(
                 val lat: Double,
                 val lng: Double,
                 val address: String,
                 val city: String
-            )
-
-            data class Contact(
-                val phone: String,
-            )
-
-            data class VenueDetails(
-                val id: String
             )
         }
     }

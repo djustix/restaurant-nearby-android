@@ -6,6 +6,8 @@ buildscript {
     ext.coroutines_version = '1.4.2'
     ext.navigation_version = "2.3.5"
     ext.retrofit_version = "2.9.0"
+    ext.mockito_version = '3.5.15'
+    ext.mockito_kotlin_version = '2.2.0'
 
     repositories {
         google()

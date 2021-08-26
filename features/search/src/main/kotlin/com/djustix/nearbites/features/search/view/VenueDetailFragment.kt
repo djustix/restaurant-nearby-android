@@ -21,6 +21,15 @@ class VenueDetailFragment : Fragment() {
     ): View {
         _binding = FragmentVenueDetailBinding.inflate(inflater, container, false)
 
+        // Get the requested details from the passed arguments.
+        // In a more purposeful application we'd inject a viewModel in this class and send the Venue,
+        // for the ViewModel to determine ViewState and execute possible domain logic / get details.
+        val venue = arguments.venue
+
+        val addressDescription = "${venue.location.address}, {${venue.location.city}"
+        binding.titleLabel.text = venue.name
+        binding.addressLabel.text = addressDescription
+
         return binding.root
     }
 

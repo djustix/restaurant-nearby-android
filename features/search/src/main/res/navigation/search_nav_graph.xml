@@ -8,7 +8,7 @@
     <fragment
         android:id="@+id/nearbyVenuesMapFragment"
         android:name="com.djustix.nearbites.features.search.view.NearbyVenuesMapFragment"
-        android:label="NearbyVenuesMapFragment"
+        android:label="Nearbites"
         tools:layout="@layout/fragment_nearby_venues_map" >
         <action
             android:id="@+id/showVenueDetail"
@@ -18,7 +18,7 @@
     <fragment
         android:id="@+id/venueDetailFragment"
         android:name="com.djustix.nearbites.features.search.view.VenueDetailFragment"
-        android:label="VenueDetailFragment"
+        android:label="Venue Details"
         tools:layout="@layout/fragment_venue_detail">
         <argument
             android:name="venue"

@@ -47,7 +47,7 @@ class NearbyVenuesViewModel(
             }
     }
 
-    sealed class ViewState() {
+    sealed class ViewState {
         object Loading: ViewState()
         data class VenuesAvailable(val data: List<Venue>): ViewState()
         data class Error(val exception: Exception): ViewState()

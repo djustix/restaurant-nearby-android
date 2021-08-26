@@ -11,20 +11,22 @@ import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-
+/**
+ * Create Koin Module for Feature Dependencies
+ */
 val searchModule = module {
     viewModel { NearbyVenuesViewModel(get()) }
 
     single<VenueRepository> { FourSquareVenueRepository(get()) }
 
     single<FourSquareVenueApi> {
-
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-
         val httpClient = OkHttpClient.Builder().apply {
-            //addInterceptor(logging)
+            if (BuildConfig.DEBUG) {
+                val logging = HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY
+                }
+                addInterceptor(logging)
+            }
         }
 
         val retrofit = Retrofit.Builder()

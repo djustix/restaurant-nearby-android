@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.location.Location
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -146,11 +145,9 @@ class NearbyVenuesMapFragment : Fragment(),
     }
 
     private fun displayVenues(venues: List<Venue>) {
-        Log.i("BiteMe", "Display ${venues.size} venues")
         binding.loadingView.hide()
 
         // Only attempt to add markers if the venue isn't already added
-        val newMarkers = mutableMapOf<String, Pair<Venue, Marker>>()
         venues.forEach { venue ->
             if (!markers.containsKey(venue.id)) {
                 val marker = mapView.addVenueMarker(venue)
@@ -169,22 +166,26 @@ class NearbyVenuesMapFragment : Fragment(),
      */
     private fun GoogleMap.removeOutOfBoundsMarkers() {
         val mapBounds = projection.visibleRegion.latLngBounds
-        val iterator = markers.iterator()
+        /*val iterator = markers.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
             if (!mapBounds.contains(entry.value.second.position)) {
                 entry.value.second.remove()
                 iterator.remove()
             }
+        }*/
+        markers.values.removeIf { pair ->
+            if (!mapBounds.contains(pair.second.position)) {
+                pair.second.remove()
+                true
+            } else false
         }
     }
 
     private fun GoogleMap.addVenueMarker(venue: Venue): Marker? {
         val location = LatLng(venue.location.latitude, venue.location.longitude)
 
-        //val icon = bitmapDescriptorFromVector(R.drawable.ic_marker)
         val options = MarkerOptions()
-            //.icon(icon)
             .anchor(0.5f, 0.9f)
             .position(location)
 
@@ -205,15 +206,5 @@ class NearbyVenuesMapFragment : Fragment(),
         )
 
         return radius[0].toInt()
-    }
-
-    private fun bitmapDescriptorFromVector(@DrawableRes vectorResId: Int): BitmapDescriptor? {
-        return ContextCompat.getDrawable(requireContext(), vectorResId)?.run {
-            setBounds(0, 0, intrinsicWidth, intrinsicHeight)
-            val bitmap =
-                Bitmap.createBitmap(intrinsicWidth, intrinsicHeight, Bitmap.Config.ARGB_8888)
-            draw(Canvas(bitmap))
-            BitmapDescriptorFactory.fromBitmap(bitmap)
-        }
     }
 }
